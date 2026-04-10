@@ -2,20 +2,20 @@
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
   <channel>
     <title>Clipbook</title>
-    <link>https://raw.githubusercontent.com/xcy960815/maccy/master/appcast.xml</link>
+    <link>https://raw.githubusercontent.com/xcy960815/Clipbook/master/appcast.xml</link>
     <description>Most recent changes with links to updates.</description>
     <language>en</language>
     <item>
       <title>0.0.2</title>
       <description><![CDATA[<p>See the release notes for details.</p>]]></description>
-      <pubDate>Fri, 10 Apr 2026 17:25:16 GMT</pubDate>
-      <releaseNotesLink>https://github.com/xcy960815/maccy/releases/tag/v0.0.2</releaseNotesLink>
+      <pubDate>Fri, 10 Apr 2026 17:34:08 GMT</pubDate>
+      <releaseNotesLink>https://github.com/xcy960815/Clipbook/releases/tag/v0.0.2</releaseNotesLink>
       <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
       <enclosure
-        url="https://github.com/xcy960815/maccy/releases/download/v0.0.2/Clipbook-v0.0.2-unsigned.app.zip"
+        url="https://github.com/xcy960815/Clipbook/releases/download/v0.0.2/Clipbook-v0.0.2-unsigned.app.zip"
         sparkle:version="1"
         sparkle:shortVersionString="0.0.2"
-        length="3585268"
+        length="3585294"
         type="application/octet-stream"
       />
     </item>
