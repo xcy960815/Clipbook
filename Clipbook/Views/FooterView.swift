@@ -2,10 +2,10 @@ import Defaults
 import SwiftUI
 
 struct FooterView: View {
-  @Bindable var footer: Footer
+  @ObservedObject var footer: Footer
 
-  @Environment(AppState.self) private var appState
-  @Environment(ModifierFlags.self) private var modifierFlags
+  @EnvironmentObject private var appState: AppState
+  @EnvironmentObject private var modifierFlags: ModifierFlags
   @Default(.showFooter) private var showFooter
   @State private var clearOpacity: Double = 1
   @State private var clearAllOpacity: Double = 0
@@ -30,7 +30,7 @@ struct FooterView: View {
         FooterItemView(item: footer.items[1])
           .opacity(clearAllOpacity)
       }
-      .onChange(of: modifierFlags.flags) {
+      .onChange(of: modifierFlags.flags) { _ in
         if clearAllModifiersPressed {
           clearOpacity = 0
           clearAllOpacity = 1

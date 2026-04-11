@@ -1,7 +1,8 @@
 xcuserdata/
-Maccy.xcodeproj/project.xcworkspace/xcshareddata
-build-local-package/
+Clipbook.xcodeproj/project.xcworkspace/xcshareddata
 .idea
 .claude
 .DS_Store
-Maccy/.DS_Store
+Clipbook/.DS_Store
+.xcode-tmp/
+build-local-package/

@@ -2,6 +2,7 @@ import SwiftUI
 
 // A text view that properly wraps single-line content without extra horizontal or vertical spaces.
 // https://www.reddit.com/r/SwiftUI/comments/1gx1w6v/how_to_wrap_a_text_inside_a_macos_popover/
+@available(macOS 13.0, *)
 struct WrappingTextView: Layout {
   let maxWidth: CGFloat = 800
   let targetRatio: CGFloat = 1.2

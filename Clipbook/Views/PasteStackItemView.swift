@@ -27,14 +27,14 @@ struct PasteStackItemView: View {
       selectionId: stack.id,
       appIcon: item.applicationImage,
       image: index != nil ? item.thumbnailImage : nil,
-      accessoryImage: item.thumbnailImage != nil ? nil : ColorImage.from(item.title),
-      attributedTitle: item.attributedTitle,
+      accessoryImage: item.thumbnailImage != nil ? nil : ColorImage.from(item.displayTitle),
+      attributedTitle: item.displayAttributedTitle,
       shortcuts: [],
       isSelected: isSelected,
       selectionIndex: index,
       selectionAppearance: .none
     ) {
-      Text(verbatim: item.title)
+      Text(verbatim: item.displayTitle)
     }
   }
 }

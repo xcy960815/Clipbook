@@ -1,21 +1,21 @@
 import AppKit
+import Combine
 import Defaults
 import Foundation
 import Settings
 import SwiftUI
 
-@Observable
-class AppState: Sendable {
+final class AppState: ObservableObject {
   static let shared = AppState(history: History.shared, footer: Footer())
 
   let multiSelectionEnabled = false
 
-  var appDelegate: AppDelegate?
-  var popup: Popup
-  var history: History
-  var footer: Footer
-  var navigator: NavigationManager
-  var preview: SlideoutController
+  @Published var appDelegate: AppDelegate?
+  let popup: Popup
+  let history: History
+  let footer: Footer
+  let navigator: NavigationManager
+  let preview: SlideoutController
 
   var searchVisible: Bool {
     if !Defaults[.showSearch] { return false }
@@ -35,6 +35,7 @@ class AppState: Sendable {
   private let about = About()
   private var settingsWindowController: SettingsWindowController?
   private var settingsWindowObservers: [NSObjectProtocol] = []
+  private var childObservers: [AnyCancellable] = []
 
   init(history: History, footer: Footer) {
     self.history = history
@@ -50,6 +51,7 @@ class AppState: Sendable {
       })
     preview.contentWidth = Defaults[.windowSize].width
     preview.slideoutWidth = Defaults[.previewWidth]
+    bindChildren()
   }
 
   @MainActor
@@ -138,8 +140,7 @@ class AppState: Sendable {
             toolbarIcon: NSImage.pincircle!
           ) {
             PinsSettingsPane()
-              .environment(self)
-              .modelContainer(Storage.shared.container)
+              .environmentObject(self)
           },
           Settings.Pane(
             identifier: Settings.PaneIdentifier.ignore,
@@ -182,5 +183,19 @@ class AppState: Sendable {
         self.popup.setSettingsWindowPresented(false)
       }
     ]
+  }
+
+  private func bindChildren() {
+    childObservers = [
+      popup.objectWillChange.eraseToAnyPublisher(),
+      history.objectWillChange.eraseToAnyPublisher(),
+      footer.objectWillChange.eraseToAnyPublisher(),
+      navigator.objectWillChange.eraseToAnyPublisher(),
+      preview.objectWillChange.eraseToAnyPublisher()
+    ].map { publisher in
+      publisher.sink { [weak self] _ in
+        self?.objectWillChange.send()
+      }
+    }
   }
 }

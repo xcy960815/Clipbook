@@ -14,7 +14,6 @@ Clipbook 需要 macOS Sonoma 14 或更高版本。
 <!-- vim-markdown-toc GFM -->
 
 * [功能特性](#功能特性)
-* [系统要求](#系统要求)
 * [安装](#安装)
 * [使用方法](#使用方法)
 * [高级用法](#高级用法)
@@ -42,14 +41,9 @@ Clipbook 需要 macOS Sonoma 14 或更高版本。
 * 开源且免费
 * 支持可选的双击修饰键唤醒方式，可使用 Option、Shift 或 Control
 
-## 系统要求
-
-* macOS Sonoma 14 或更高版本
-
 ## 安装
 
-* 从 [Releases](https://github.com/xcy960815/clipbook/releases/latest) 页面下载最新版本。
-* 或通过 [Homebrew](https://brew.sh/) 安装：
+你可以从 [Releases](https://github.com/xcy960815/clipbook/releases/latest) 页面下载最新版本，或者使用 [Homebrew](https://brew.sh/) 安装：
 
 ```sh
 brew install clipbook

@@ -17,7 +17,7 @@ private struct PasteStackPreviewItemView: View {
 struct PasteStackPreviewView: View {
   private static let padding = 2.0
 
-  var pasteStack: PasteStack
+  @ObservedObject var pasteStack: PasteStack
   @State var pasteStackListHeight: CGFloat = 0
 
   var body: some View {
@@ -38,7 +38,7 @@ struct PasteStackPreviewView: View {
       .readHeight($pasteStackListHeight)
     }
     .frame(maxHeight: pasteStackListHeight)
-    .background(.fill.tertiary)
+    .background(Color(nsColor: .controlBackgroundColor))
     .clipShape(SelectionAppearance.none.rect(cornerRadius: Popup.cornerRadius))
     Spacer()
   }

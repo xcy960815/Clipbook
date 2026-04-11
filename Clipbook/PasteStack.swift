@@ -1,8 +1,8 @@
-import Foundation
 import AppKit
+import Combine
+import Foundation
 
-@Observable
-class PasteStack: Identifiable, Hashable {
+final class PasteStack: ObservableObject, Identifiable, Hashable {
   private static var listener: Any?
 
   static func initializeIfNeeded() {
@@ -28,9 +28,9 @@ class PasteStack: Identifiable, Hashable {
     }
   }
 
-  var id: UUID = UUID()
-  var items: [HistoryItemDecorator] = []
-  var modifierFlags: NSEvent.ModifierFlags
+  let id: UUID = UUID()
+  @Published var items: [HistoryItemDecorator] = []
+  let modifierFlags: NSEvent.ModifierFlags
 
   init(items: [HistoryItemDecorator], modifierFlags: NSEvent.ModifierFlags) {
     self.items = items

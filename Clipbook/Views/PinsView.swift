@@ -1,8 +1,6 @@
 import SwiftUI
 
 struct PinsView: View {
-  @Environment(AppState.self) private var appState
-
   var items: [HistoryItemDecorator]
 
   var body: some View {

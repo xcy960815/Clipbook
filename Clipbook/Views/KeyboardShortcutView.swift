@@ -27,15 +27,17 @@ struct KeyboardShortcutView: View {
   }
 }
 
-#Preview {
-  List {
-    KeyboardShortcutView(shortcut: KeyShortcut(key: .a, modifierFlags: [.command]))
-    KeyboardShortcutView(shortcut: KeyShortcut(key: .w))
-    KeyboardShortcutView(shortcut: KeyShortcut(key: .one, modifierFlags: [.command]))
-    KeyboardShortcutView(shortcut: KeyShortcut(key: .two, modifierFlags: [.command]))
-    KeyboardShortcutView()
+private struct KeyboardShortcutView_Previews: PreviewProvider {
+  static var previews: some View {
+    List {
+      KeyboardShortcutView(shortcut: KeyShortcut(key: .a, modifierFlags: [.command]))
+      KeyboardShortcutView(shortcut: KeyShortcut(key: .w))
+      KeyboardShortcutView(shortcut: KeyShortcut(key: .one, modifierFlags: [.command]))
+      KeyboardShortcutView(shortcut: KeyShortcut(key: .two, modifierFlags: [.command]))
+      KeyboardShortcutView()
 
-    KeyboardShortcutView(shortcut: KeyShortcut(key: .delete, modifierFlags: [.command, .option, .control, .shift]))
-    KeyboardShortcutView(shortcut: KeyShortcut(key: .c, modifierFlags: [.command, .option]))
+      KeyboardShortcutView(shortcut: KeyShortcut(key: .delete, modifierFlags: [.command, .option, .control, .shift]))
+      KeyboardShortcutView(shortcut: KeyShortcut(key: .c, modifierFlags: [.command, .option]))
+    }
   }
 }

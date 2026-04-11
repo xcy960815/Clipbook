@@ -1,8 +1,8 @@
+import Combine
 import Foundation
 import SwiftUI
 
-@Observable
-class NavigationManager { // swiftlint:disable:this type_body_length
+final class NavigationManager: ObservableObject { // swiftlint:disable:this type_body_length
   private var history: History
   private var footer: Footer
 
@@ -11,14 +11,14 @@ class NavigationManager { // swiftlint:disable:this type_body_length
     self.footer = footer
   }
 
-  var selection: Selection<HistoryItemDecorator> = Selection() {
+  @Published var selection: Selection<HistoryItemDecorator> = Selection() {
     willSet {
       selection.forEach { _, item in item.selectionIndex = -1 }
       newValue.forEach { index, item in item.selectionIndex = index }
     }
   }
 
-  var scrollTarget: UUID?
+  @Published var scrollTarget: UUID?
   var leadSelection: UUID? {
     if let item = leadHistoryItem {
       return item.id
@@ -28,7 +28,7 @@ class NavigationManager { // swiftlint:disable:this type_body_length
     }
     return history.pasteStack?.id
   }
-  private(set) var leadHistoryItem: HistoryItemDecorator? {
+  @Published private(set) var leadHistoryItem: HistoryItemDecorator? {
     didSet {
       guard oldValue?.id != leadHistoryItem?.id else { return }
 
@@ -46,13 +46,13 @@ class NavigationManager { // swiftlint:disable:this type_body_length
     return leadSelection != nil && leadSelection == history.pasteStack?.id
   }
 
-  var isManualMultiSelect: Bool = false
+  @Published var isManualMultiSelect: Bool = false
   var isMultiSelectInProgress: Bool {
     return isManualMultiSelect || selection.count > 1
   }
 
-  var hoverSelectionWhileKeyboardNavigating: UUID?
-  var isKeyboardNavigating: Bool = true {
+  @Published var hoverSelectionWhileKeyboardNavigating: UUID?
+  @Published var isKeyboardNavigating: Bool = true {
     didSet {
       if !isKeyboardNavigating && !isMultiSelectInProgress,
          let hoverSelection = hoverSelectionWhileKeyboardNavigating {

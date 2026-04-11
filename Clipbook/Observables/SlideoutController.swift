@@ -1,6 +1,6 @@
+import Combine
 import Defaults
 import Logging
-import Observation
 import SwiftUI
 
 enum SlideoutState {
@@ -62,8 +62,7 @@ enum ResizingMode {
   case slideout
 }
 
-@Observable
-class SlideoutController {
+final class SlideoutController: ObservableObject {
   let logger = Logger(label: "org.p0deje.Clipbook")
   private static let animationDuration = 0.25
 
@@ -71,17 +70,20 @@ class SlideoutController {
   let onSlideoutResize: (CGFloat) -> Void
 
   let minimumContentWidth: CGFloat = 200
-  var contentResizeWidth: CGFloat = 0
-  var contentAnimationWidth: CGFloat?
+  @Published var contentResizeWidth: CGFloat = 0
+  @Published var contentAnimationWidth: CGFloat?
 
   let minimumSlideoutWidth: CGFloat = 200
-  var slideoutResizeWidth: CGFloat = 0
+  @Published var slideoutResizeWidth: CGFloat = 0
 
   private var _contentWidth: CGFloat = 0
   var contentWidth: CGFloat {
     get { return _contentWidth }
     set {
-      _contentWidth = max(minimumContentWidth, newValue).rounded()
+      let clampedWidth = max(minimumContentWidth, newValue).rounded()
+      guard _contentWidth != clampedWidth else { return }
+      objectWillChange.send()
+      _contentWidth = clampedWidth
       onContentResize(_contentWidth)
     }
   }
@@ -89,14 +91,17 @@ class SlideoutController {
   var slideoutWidth: CGFloat {
     get { return _slideoutWidth }
     set {
-      _slideoutWidth = max(minimumSlideoutWidth, newValue).rounded()
+      let clampedWidth = max(minimumSlideoutWidth, newValue).rounded()
+      guard _slideoutWidth != clampedWidth else { return }
+      objectWillChange.send()
+      _slideoutWidth = clampedWidth
       onSlideoutResize(_slideoutWidth)
     }
   }
 
-  var placement: SlideoutPlacement = .right
-  var state: SlideoutState = .closed
-  var resizingMode: ResizingMode = .none
+  @Published var placement: SlideoutPlacement = .right
+  @Published var state: SlideoutState = .closed
+  @Published var resizingMode: ResizingMode = .none
 
   var nswindow: NSWindow? {
     return AppState.shared.appDelegate?.panel
@@ -159,7 +164,7 @@ class SlideoutController {
     }
 
     cancelAutoOpen()
-    withAnimation(.easeInOut(duration: Self.animationDuration), completionCriteria: .removed) {
+    withAnimation(.easeInOut(duration: Self.animationDuration)) {
       if let window = nswindow {
         togglePreviewStateWithAnimation(windowFrame: window.frame)
         var newSize = window.frame.size
@@ -196,7 +201,6 @@ class SlideoutController {
           )
         }
       }
-    } completion: {
     }
   }
 
@@ -228,7 +232,7 @@ class SlideoutController {
     guard !state.isOpen else { return }
 
     autoOpenTask = Task { @MainActor in
-      try? await Task.sleep(for: .milliseconds(Defaults[.previewDelay]))
+      try? await Task.sleep(nanoseconds: UInt64(Defaults[.previewDelay]) * 1_000_000)
       guard !Task.isCancelled else { return }
 
       if !state.isOpen {

@@ -1,5 +1,6 @@
 import AppIntents
 
+@available(macOS 13.0, *)
 struct HistoryItemAppEntity: TransientAppEntity {
   static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "Clipboard item")
 

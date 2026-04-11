@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct FooterItemView: View {
-  @Bindable var item: FooterItem
-  @Environment(AppState.self) private var appState
+  @ObservedObject var item: FooterItem
+  @EnvironmentObject private var appState: AppState
 
   var body: some View {
     ConfirmationView(item: item) {

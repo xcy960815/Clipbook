@@ -21,7 +21,9 @@ struct IgnoreSettingsPane: View {
   }
 }
 
-#Preview {
-  IgnoreSettingsPane()
-    .environment(\.locale, .init(identifier: "en"))
+private struct IgnoreSettingsPane_Previews: PreviewProvider {
+  static var previews: some View {
+    IgnoreSettingsPane()
+      .environment(\.locale, .init(identifier: "en"))
+  }
 }

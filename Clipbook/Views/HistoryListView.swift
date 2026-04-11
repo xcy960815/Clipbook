@@ -5,8 +5,8 @@ struct HistoryListView: View {
   @Binding var searchQuery: String
   @FocusState.Binding var searchFocused: Bool
 
-  @Environment(AppState.self) private var appState
-  @Environment(ModifierFlags.self) private var modifierFlags
+  @EnvironmentObject private var appState: AppState
+  @EnvironmentObject private var modifierFlags: ModifierFlags
   @Environment(\.scenePhase) private var scenePhase
 
   @Default(.pinTo) private var pinTo
@@ -73,6 +73,10 @@ struct HistoryListView: View {
     let scrollTopPadding = topSeparatorVisible ? Popup.verticalSeparatorPadding : topPadding
     let scrollBottomPadding = bottomSeparatorVisible ? Popup.verticalSeparatorPadding : bottomPadding
 
+    // Return these 3 views as direct siblings (TupleView), matching the
+    // original layout structure so the parent VStack in ContentView
+    // distributes space correctly among them.
+
     VStack(spacing: 0) {
       if let stack = appState.history.pasteStack,
          !stack.items.isEmpty {
@@ -99,12 +103,14 @@ struct HistoryListView: View {
         MultipleSelectionListView(items: unpinnedItems) { previous, item, next, index in
           HistoryItemView(item: item, previous: previous, next: next, index: index)
         }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .fixedSize(horizontal: false, vertical: true)
         .padding(.top, scrollTopPadding)
         .padding(.bottom, scrollBottomPadding)
         .task(id: appState.navigator.scrollTarget) {
           guard appState.navigator.scrollTarget != nil else { return }
 
-          try? await Task.sleep(for: .milliseconds(10))
+          try? await Task.sleep(nanoseconds: 10_000_000)
           guard !Task.isCancelled else { return }
 
           if let selection = appState.navigator.scrollTarget {
@@ -112,8 +118,8 @@ struct HistoryListView: View {
             appState.navigator.scrollTarget = nil
           }
         }
-        .onChange(of: scenePhase) {
-          if scenePhase == .active {
+        .onChange(of: scenePhase) { newScenePhase in
+          if newScenePhase == .active {
             searchFocused = true
             appState.navigator.isKeyboardNavigating = true
             appState.navigator.select(item: appState.history.unpinnedItems.first ?? appState.history.pinnedItems.first)
@@ -127,11 +133,12 @@ struct HistoryListView: View {
           }
         }
         // Calculate the total height inside a scroll view.
-        .background {
+        // Only fire when the popup explicitly requests a resize (needsResize).
+        .background(
           GeometryReader { geo in
             Color.clear
               .task(id: appState.popup.needsResize) {
-                try? await Task.sleep(for: .milliseconds(10))
+                try? await Task.sleep(nanoseconds: 10_000_000)
                 guard !Task.isCancelled else { return }
 
                 if appState.popup.needsResize {
@@ -139,11 +146,8 @@ struct HistoryListView: View {
                 }
               }
           }
-        }
+        )
       }
-      .contentMargins(.leading, 10, for: .scrollIndicators)
-      .contentMargins(.top, scrollTopPadding, for: .scrollIndicators)
-      .contentMargins(.bottom, scrollBottomPadding, for: .scrollIndicators)
     }
 
     VStack(spacing: 0) {

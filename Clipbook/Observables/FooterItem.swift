@@ -1,7 +1,7 @@
+import Combine
 import SwiftUI
 
-@Observable
-class FooterItem: Equatable, Identifiable, HasVisibility {
+final class FooterItem: ObservableObject, Equatable, Identifiable, HasVisibility {
   struct Confirmation {
     var message: LocalizedStringKey
     var comment: LocalizedStringKey
@@ -15,15 +15,15 @@ class FooterItem: Equatable, Identifiable, HasVisibility {
 
   let id = UUID()
 
-  var title: String
-  var shortcuts: [KeyShortcut] = []
-  var help: LocalizedStringKey?
-  var isSelected: Bool = false
-  var confirmation: Confirmation?
-  var showConfirmation: Bool = false
-  var suppressConfirmation: Binding<Bool>?
-  var isVisible: Bool = true
-  var action: () -> Void
+  @Published var title: String
+  @Published var shortcuts: [KeyShortcut] = []
+  @Published var help: LocalizedStringKey?
+  @Published var isSelected: Bool = false
+  @Published var confirmation: Confirmation?
+  @Published var showConfirmation: Bool = false
+  @Published var suppressConfirmation: Binding<Bool>?
+  @Published var isVisible: Bool = true
+  let action: () -> Void
 
   init(
     title: String,

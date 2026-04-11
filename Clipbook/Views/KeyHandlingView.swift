@@ -2,174 +2,181 @@ import Sauce
 import Defaults
 import SwiftUI
 
+private struct KeyDownMonitorModifier: ViewModifier {
+  let handler: (NSEvent) -> NSEvent?
+
+  @State private var monitor: Any?
+
+  func body(content: Content) -> some View {
+    content
+      .onAppear {
+        guard monitor == nil else {
+          return
+        }
+
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+          handler(event)
+        }
+      }
+      .onDisappear {
+        if let monitor {
+          NSEvent.removeMonitor(monitor)
+          self.monitor = nil
+        }
+      }
+  }
+}
+
 struct KeyHandlingView<Content: View>: View {
   @Binding var searchQuery: String
   @FocusState.Binding var searchFocused: Bool
   @ViewBuilder let content: () -> Content
 
-  @Environment(AppState.self) private var appState
+  @EnvironmentObject private var appState: AppState
 
   var body: some View {
     content()
-      .onKeyPress { _ in
-        // Unfortunately, key presses don't allow access to
-        // key code and don't properly work with multiple inputs,
-        // so pressing ⌘, on non-English layout doesn't open
-        // preferences. Stick to NSEvent to fix this behavior.
+      .modifier(KeyDownMonitorModifier(handler: handleKeyDown))
+  }
 
-        if searchFocused {
-          // Ignore input when candidate window is open
-          // https://stackoverflow.com/questions/73677444/how-to-detect-the-candidate-window-when-using-japanese-keyboard
-          if let inputClient = NSApp.keyWindow?.firstResponder as? NSTextInputClient,
-             inputClient.hasMarkedText() {
-            return .ignored
-          }
-        }
+  private func handleKeyDown(_ event: NSEvent) -> NSEvent? {
+    if shouldIgnoreInputMethod() {
+      return event
+    }
 
-        switch KeyChord(NSApp.currentEvent) {
-        case .clearHistory:
-          if let item = appState.footer.items.first(where: { $0.title == "clear" }),
-             item.confirmation != nil,
-             let suppressConfirmation = item.suppressConfirmation {
-            if suppressConfirmation.wrappedValue {
-              item.action()
-            } else {
-              item.showConfirmation = true
-            }
-            return .handled
-          } else {
-            return .ignored
-          }
-        case .clearHistoryAll:
-          if let item = appState.footer.items.first(where: { $0.title == "clear_all" }),
-             item.confirmation != nil,
-             let suppressConfirmation = item.suppressConfirmation {
-            if suppressConfirmation.wrappedValue {
-              item.action()
-            } else {
-              item.showConfirmation = true
-            }
-            return .handled
-          } else {
-            return .ignored
-          }
-        case .clearSearch:
-          searchQuery = ""
-          return .handled
-        case .deleteCurrentItem:
-          if appState.navigator.pasteStackSelected {
-            appState.removePasteStack()
-          } else {
-            appState.deleteSelection()
-          }
-          return .handled
-        case .deleteOneCharFromSearch:
-          searchFocused = true
-          _ = searchQuery.popLast()
-          return .handled
-        case .deleteLastWordFromSearch:
-          searchFocused = true
-          let newQuery = searchQuery.split(separator: " ").dropLast().joined(separator: " ")
-          if newQuery.isEmpty {
-            searchQuery = ""
-          } else {
-            searchQuery = "\(newQuery) "
-          }
-
-          return .handled
-        case .moveToNext:
-          guard NSApp.characterPickerWindow == nil else {
-            return .ignored
-          }
-
-          appState.navigator.highlightNext()
-          return .handled
-        case .moveToLast:
-          guard NSApp.characterPickerWindow == nil else {
-            return .ignored
-          }
-
-          appState.navigator.highlightLast()
-          return .handled
-        case .moveToPrevious:
-          guard NSApp.characterPickerWindow == nil else {
-            return .ignored
-          }
-
-          appState.navigator.highlightPrevious()
-          return .handled
-        case .moveToFirst:
-          guard NSApp.characterPickerWindow == nil else {
-            return .ignored
-          }
-
-          appState.navigator.highlightFirst()
-          return .handled
-        case .extendToNext:
-          guard NSApp.characterPickerWindow == nil else {
-            return .ignored
-          }
-          guard AppState.shared.multiSelectionEnabled else {
-            return .ignored
-          }
-          appState.navigator.extendHighlightToNext()
-          return .handled
-        case .extendToLast:
-          guard NSApp.characterPickerWindow == nil else {
-            return .ignored
-          }
-          guard AppState.shared.multiSelectionEnabled else {
-            return .ignored
-          }
-          appState.navigator.extendHighlightToLast()
-          return .handled
-        case .extendToPrevious:
-          guard NSApp.characterPickerWindow == nil else {
-            return .ignored
-          }
-          guard AppState.shared.multiSelectionEnabled else {
-            return .ignored
-          }
-          appState.navigator.extendHighlightToPrevious()
-          return .handled
-        case .extendToFirst:
-          guard NSApp.characterPickerWindow == nil else {
-            return .ignored
-          }
-          guard AppState.shared.multiSelectionEnabled else {
-            return .ignored
-          }
-          appState.navigator.extendHighlightToFirst()
-          return .handled
-        case .openPreferences:
-          appState.openPreferences()
-          return .handled
-        case .pinOrUnpin:
-          appState.togglePin()
-          return .handled
-        case .selectCurrentItem:
-          appState.select()
-          return .handled
-        case .close:
-          appState.popup.close()
-          return .handled
-        case .togglePreview:
-          appState.preview.togglePreview()
-          return .handled
-        default:
-          ()
-        }
-
-        if let item = appState.history.pressedShortcutItem {
-          appState.navigator.select(item: item)
-          Task {
-            try? await Task.sleep(for: .milliseconds(50))
-            appState.history.select(item)
-          }
-          return .handled
-        }
-
-        return .ignored
+    switch KeyChord(event) {
+    case .clearHistory:
+      return handleConfirmationAction(named: "clear", fallback: event)
+    case .clearHistoryAll:
+      return handleConfirmationAction(named: "clear_all", fallback: event)
+    case .clearSearch:
+      searchQuery = ""
+      return nil
+    case .deleteCurrentItem:
+      if appState.navigator.pasteStackSelected {
+        appState.removePasteStack()
+      } else {
+        appState.deleteSelection()
       }
+      return nil
+    case .deleteOneCharFromSearch:
+      searchFocused = true
+      _ = searchQuery.popLast()
+      return nil
+    case .deleteLastWordFromSearch:
+      searchFocused = true
+      let newQuery = searchQuery.split(separator: " ").dropLast().joined(separator: " ")
+      if newQuery.isEmpty {
+        searchQuery = ""
+      } else {
+        searchQuery = "\(newQuery) "
+      }
+      return nil
+    case .moveToNext:
+      guard NSApp.characterPickerWindow == nil else {
+        return event
+      }
+      appState.navigator.highlightNext()
+      return nil
+    case .moveToLast:
+      guard NSApp.characterPickerWindow == nil else {
+        return event
+      }
+      appState.navigator.highlightLast()
+      return nil
+    case .moveToPrevious:
+      guard NSApp.characterPickerWindow == nil else {
+        return event
+      }
+      appState.navigator.highlightPrevious()
+      return nil
+    case .moveToFirst:
+      guard NSApp.characterPickerWindow == nil else {
+        return event
+      }
+      appState.navigator.highlightFirst()
+      return nil
+    case .extendToNext:
+      guard NSApp.characterPickerWindow == nil, AppState.shared.multiSelectionEnabled else {
+        return event
+      }
+      appState.navigator.extendHighlightToNext()
+      return nil
+    case .extendToLast:
+      guard NSApp.characterPickerWindow == nil, AppState.shared.multiSelectionEnabled else {
+        return event
+      }
+      appState.navigator.extendHighlightToLast()
+      return nil
+    case .extendToPrevious:
+      guard NSApp.characterPickerWindow == nil, AppState.shared.multiSelectionEnabled else {
+        return event
+      }
+      appState.navigator.extendHighlightToPrevious()
+      return nil
+    case .extendToFirst:
+      guard NSApp.characterPickerWindow == nil, AppState.shared.multiSelectionEnabled else {
+        return event
+      }
+      appState.navigator.extendHighlightToFirst()
+      return nil
+    case .openPreferences:
+      appState.openPreferences()
+      return nil
+    case .pinOrUnpin:
+      appState.togglePin()
+      return nil
+    case .selectCurrentItem:
+      appState.select()
+      return nil
+    case .close:
+      appState.popup.close()
+      return nil
+    case .togglePreview:
+      appState.preview.togglePreview()
+      return nil
+    default:
+      break
+    }
+
+    if let item = appState.history.pressedShortcutItem {
+      appState.navigator.select(item: item)
+      Task {
+        try? await Task.sleep(nanoseconds: 50_000_000)
+        appState.history.select(item)
+      }
+      return nil
+    }
+
+    return event
+  }
+
+  private func shouldIgnoreInputMethod() -> Bool {
+    guard searchFocused else {
+      return false
+    }
+
+    // Ignore input when candidate window is open.
+    if let inputClient = NSApp.keyWindow?.firstResponder as? NSTextInputClient {
+      return inputClient.hasMarkedText()
+    }
+
+    return false
+  }
+
+  private func handleConfirmationAction(named title: String, fallback event: NSEvent) -> NSEvent? {
+    guard let item = appState.footer.items.first(where: { $0.title == title }),
+          item.confirmation != nil,
+          let suppressConfirmation = item.suppressConfirmation else {
+      return event
+    }
+
+    if suppressConfirmation.wrappedValue {
+      item.action()
+    } else {
+      item.showConfirmation = true
+    }
+
+    return nil
   }
 }

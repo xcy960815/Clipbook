@@ -2,7 +2,7 @@ import Defaults
 import SwiftUI
 
 struct HistoryItemView: View {
-  @Bindable var item: HistoryItemDecorator
+  @ObservedObject var item: HistoryItemDecorator
   var previous: HistoryItemDecorator?
   var next: HistoryItemDecorator?
   var index: Int
@@ -29,7 +29,7 @@ struct HistoryItemView: View {
     }
   }
 
-  @Environment(AppState.self) private var appState
+  @EnvironmentObject private var appState: AppState
 
   var body: some View {
     ListItemView(
@@ -37,14 +37,14 @@ struct HistoryItemView: View {
       selectionId: item.id,
       appIcon: item.applicationImage,
       image: item.thumbnailImage,
-      accessoryImage: item.thumbnailImage != nil ? nil : ColorImage.from(item.title),
-      attributedTitle: item.attributedTitle,
+      accessoryImage: item.thumbnailImage != nil ? nil : ColorImage.from(item.displayTitle),
+      attributedTitle: item.displayAttributedTitle,
       shortcuts: item.shortcuts,
       isSelected: item.isSelected,
       selectionIndex: visualIndex,
       selectionAppearance: selectionAppearance
     ) {
-      Text(verbatim: item.title)
+      Text(verbatim: item.displayTitle)
     }
     .onAppear {
       item.ensureThumbnailImage()

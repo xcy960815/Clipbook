@@ -16,8 +16,7 @@ Clipbook works on macOS Sonoma 14 or higher.
 <!-- vim-markdown-toc GFM -->
 
 * [Features](#features)
-* [Requirements](#requirements)
-* [Installation](#installation)
+* [Install](#install)
 * [Usage](#usage)
 * [Advanced](#advanced)
   * [Ignore Copied Items](#ignore-copied-items)
@@ -44,14 +43,9 @@ Clipbook works on macOS Sonoma 14 or higher.
 * Open source and free
 * Optional double-click modifier key trigger (Option, Shift, or Control)
 
-## Requirements
+## Install
 
-* macOS Sonoma 14 or later
-
-## Installation
-
-* Download the latest version from the [releases](https://github.com/xcy960815/clipbook/releases/latest) page.
-* Or install it with [Homebrew](https://brew.sh/):
+Download the latest version from the [releases](https://github.com/xcy960815/clipbook/releases/latest) page, or use [Homebrew](https://brew.sh/):
 
 ```sh
 brew install clipbook

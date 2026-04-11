@@ -1,12 +1,18 @@
-import SwiftData
 import SwiftUI
 
 struct ContentView: View {
-  @State private var appState = AppState.shared
-  @State private var modifierFlags = ModifierFlags()
+  @StateObject private var appState = AppState.shared
+  @StateObject private var modifierFlags = ModifierFlags()
   @State private var scenePhase: ScenePhase = .background
 
   @FocusState private var searchFocused: Bool
+
+  private var searchQueryBinding: Binding<String> {
+    Binding(
+      get: { appState.history.searchQuery },
+      set: { appState.history.searchQuery = $0 }
+    )
+  }
 
   var body: some View {
     ZStack {
@@ -16,7 +22,7 @@ struct ContentView: View {
         VisualEffectView()
       }
 
-      KeyHandlingView(searchQuery: $appState.history.searchQuery, searchFocused: $searchFocused) {
+      KeyHandlingView(searchQuery: searchQueryBinding, searchFocused: $searchFocused) {
         VStack(spacing: 0) {
           SlideoutView(controller: appState.preview) {
             HeaderView(
@@ -26,7 +32,7 @@ struct ContentView: View {
 
             VStack(alignment: .leading, spacing: 0) {
               HistoryListView(
-                searchQuery: $appState.history.searchQuery,
+                searchQuery: searchQueryBinding,
                 searchFocused: $searchFocused
               )
 
@@ -57,8 +63,8 @@ struct ContentView: View {
       }
     }
     .animation(.easeInOut(duration: 0.2), value: appState.searchVisible)
-    .environment(appState)
-    .environment(modifierFlags)
+    .environmentObject(appState)
+    .environmentObject(modifierFlags)
     .environment(\.scenePhase, scenePhase)
     // FloatingPanel is not a scene, so let's implement custom scenePhase..
     .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) {
@@ -78,8 +84,11 @@ struct ContentView: View {
   }
 }
 
-#Preview {
-  ContentView()
-    .environment(\.locale, .init(identifier: "en"))
-    .modelContainer(Storage.shared.container)
+private struct ContentView_Previews: PreviewProvider {
+  static var previews: some View {
+    ContentView()
+      .environment(\.locale, .init(identifier: "en"))
+      .environmentObject(AppState.shared)
+      .environmentObject(ModifierFlags())
+  }
 }

@@ -6,9 +6,16 @@ struct PreviewItemView: View {
 
   @ViewBuilder
   func previewImage(content: () -> some View) -> some View {
-    content()
-      .aspectRatio(contentMode: .fit)
-      .clipShape(.rect(cornerRadius: 5))
+    ZStack {
+      RoundedRectangle(cornerRadius: 5, style: .continuous)
+        .fill(Color.primary.opacity(0.05))
+
+      content()
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .padding(12)
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+      .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
   }
 
   var body: some View {
@@ -21,15 +28,11 @@ struct PreviewItemView: View {
             previewImage {
               Image(nsImage: image)
                 .resizable()
+                .scaledToFit()
             }
           } else {
             previewImage {
               ZStack {
-                Color.gray.opacity(0.3)
-                  .frame(
-                    idealWidth: HistoryItemDecorator.previewImageSize.width,
-                    idealHeight: HistoryItemDecorator.previewImageSize.height
-                  )
                 Image(systemName: "photo.badge.exclamationmark")
                   .symbolRenderingMode(.multicolor)
                   .frame(alignment: .center)
@@ -39,11 +42,6 @@ struct PreviewItemView: View {
         } placeholder: {
           previewImage {
             ZStack {
-              Color.gray.opacity(0.3)
-                .frame(
-                  idealWidth: HistoryItemDecorator.previewImageSize.width,
-                  idealHeight: HistoryItemDecorator.previewImageSize.height
-                )
               ProgressView()
                 .frame(alignment: .center)
             }
@@ -53,7 +51,9 @@ struct PreviewItemView: View {
         ScrollView {
           Text(item.text)
             .font(.body)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
       }
 
       Spacer(minLength: 0)
@@ -90,5 +90,6 @@ struct PreviewItemView: View {
       }
     }
     .controlSize(.small)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   }
 }

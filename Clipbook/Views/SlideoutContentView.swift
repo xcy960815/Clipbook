@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SlideoutContentView: View {
-  @Environment(AppState.self) var appState
+  @EnvironmentObject var appState: AppState
 
   var body: some View {
     VStack {

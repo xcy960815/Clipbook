@@ -3,9 +3,8 @@ import Defaults
 import Settings
 
 struct StorageSettingsPane: View {
-  @Observable
-  class ViewModel {
-    var saveFiles = false {
+  final class ViewModel: ObservableObject {
+    @Published var saveFiles = false {
       didSet {
         Defaults.withoutPropagation {
           if saveFiles {
@@ -17,7 +16,7 @@ struct StorageSettingsPane: View {
       }
     }
 
-    var saveImages = false {
+    @Published var saveImages = false {
       didSet {
         Defaults.withoutPropagation {
           if saveImages {
@@ -29,7 +28,7 @@ struct StorageSettingsPane: View {
       }
     }
 
-    var saveText = false {
+    @Published var saveText = false {
       didSet {
         Defaults.withoutPropagation {
           if saveText {
@@ -59,7 +58,7 @@ struct StorageSettingsPane: View {
   @Default(.size) private var size
   @Default(.sortBy) private var sortBy
 
-  @State private var viewModel = ViewModel()
+  @StateObject private var viewModel = ViewModel()
   @State private var storageSize = Storage.shared.size
 
   private let sizeFormatter: NumberFormatter = {
@@ -123,7 +122,9 @@ struct StorageSettingsPane: View {
   }
 }
 
-#Preview {
-  StorageSettingsPane()
-    .environment(\.locale, .init(identifier: "en"))
+private struct StorageSettingsPane_Previews: PreviewProvider {
+  static var previews: some View {
+    StorageSettingsPane()
+      .environment(\.locale, .init(identifier: "en"))
+  }
 }

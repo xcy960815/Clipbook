@@ -1,11 +1,13 @@
 import AppKit
 import Defaults
 import Sauce
-import SwiftData
 import Vision
 
-@Model
-class HistoryItem {
+final class HistoryItem: Equatable {
+  static func == (lhs: HistoryItem, rhs: HistoryItem) -> Bool {
+    lhs === rhs
+  }
+
   static var supportedPins: Set<String> {
     // "a" reserved for select all
     // "q" reserved for quit
@@ -36,10 +38,7 @@ class HistoryItem {
 
   @MainActor
   static var availablePins: [String] {
-    let descriptor = FetchDescriptor<HistoryItem>(
-      predicate: #Predicate { $0.pin != nil }
-    )
-    let pins = try? Storage.shared.context.fetch(descriptor).compactMap({ $0.pin })
+    let pins = try? Storage.shared.store.loadItems().compactMap(\.pin)
     let assignedPins = Set(pins ?? [])
     return Array(supportedPins.subtracting(assignedPins))
   }
@@ -66,13 +65,24 @@ class HistoryItem {
   var pin: String?
   var title = ""
 
-  @Relationship(deleteRule: .cascade, inverse: \HistoryItemContent.item)
   var contents: [HistoryItemContent] = []
+  var storageURI: URL?
 
-  init(contents: [HistoryItemContent] = []) {
+  init(
+    contents: [HistoryItemContent] = [],
+    firstCopiedAt: Date = .now,
+    lastCopiedAt: Date = .now
+  ) {
     self.firstCopiedAt = firstCopiedAt
     self.lastCopiedAt = lastCopiedAt
     self.contents = contents
+    prepareForPersistence()
+  }
+
+  func prepareForPersistence() {
+    for content in contents {
+      content.item = self
+    }
   }
 
   func supersedes(_ item: HistoryItem) -> Bool {
@@ -115,17 +125,17 @@ class HistoryItem {
 
   var previewableText: String {
     if !fileURLs.isEmpty {
-      fileURLs
+      return fileURLs
         .compactMap { $0.absoluteString.removingPercentEncoding }
         .joined(separator: "\n")
     } else if let text = text, !text.isEmpty {
-      text
+      return text
     } else if let rtf = rtf, !rtf.string.isEmpty {
-      rtf.string
+      return rtf.string
     } else if let html = html, !html.string.isEmpty {
-      html.string
+      return html.string
     } else {
-      title
+      return title
     }
   }
 
@@ -239,5 +249,8 @@ class HistoryItem {
     }
 
     self.title = recognizedStrings.joined(separator: "\n")
+    Task { @MainActor in
+      try? Storage.shared.store.save(self)
+    }
   }
 }

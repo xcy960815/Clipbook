@@ -1,11 +1,11 @@
+import Combine
 import Defaults
 import SwiftUI
 
-@Observable
-class Footer: ItemsContainer {
-  var items: [FooterItem] = []
+final class Footer: ObservableObject, ItemsContainer {
+  @Published var items: [FooterItem] = []
 
-  var selectedItem: FooterItem? {
+  @Published var selectedItem: FooterItem? {
     willSet {
       selectedItem?.isSelected = false
       newValue?.isSelected = true

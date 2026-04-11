@@ -1,7 +1,7 @@
 import SwiftUI
 
 private struct HoverSelectionModifier: ViewModifier {
-  @Environment(AppState.self) private var appState
+  @EnvironmentObject private var appState: AppState
   var id: UUID
 
   func body(content: Content) -> some View {

@@ -1,5 +1,6 @@
 import Foundation
 
+@available(macOS 13.0, *)
 enum AppIntentError: Swift.Error, CustomLocalizedStringResourceConvertible {
   case notFound
 

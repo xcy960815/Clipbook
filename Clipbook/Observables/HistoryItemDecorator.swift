@@ -1,11 +1,10 @@
 import AppKit.NSWorkspace
+import Combine
 import Defaults
 import Foundation
-import Observation
 import Sauce
 
-@Observable
-class HistoryItemDecorator: Identifiable, Hashable, HasVisibility {
+final class HistoryItemDecorator: ObservableObject, Identifiable, Hashable, HasVisibility {
   static func == (lhs: HistoryItemDecorator, rhs: HistoryItemDecorator) -> Bool {
     return lhs.id == rhs.id
   }
@@ -15,15 +14,15 @@ class HistoryItemDecorator: Identifiable, Hashable, HasVisibility {
 
   let id = UUID()
 
-  var title: String = ""
-  var attributedTitle: AttributedString?
+  @Published var title: String = ""
+  @Published var attributedTitle: AttributedString?
 
-  var isVisible: Bool = true
-  var selectionIndex: Int = -1
+  @Published var isVisible: Bool = true
+  @Published var selectionIndex: Int = -1
   var isSelected: Bool {
     return selectionIndex != -1
   }
-  var shortcuts: [KeyShortcut] = []
+  @Published var shortcuts: [KeyShortcut] = []
 
   var application: String? {
     if item.universalClipboard {
@@ -43,12 +42,35 @@ class HistoryItemDecorator: Identifiable, Hashable, HasVisibility {
 
   var previewImageGenerationTask: Task<(), Error>?
   var thumbnailImageGenerationTask: Task<(), Error>?
-  var previewImage: NSImage?
-  var thumbnailImage: NSImage?
-  var applicationImage: ApplicationImage
+  @Published var previewImage: NSImage?
+  @Published var thumbnailImage: NSImage?
+  @Published var applicationImage: ApplicationImage
 
   // 10k characters seems to be more than enough on large displays
   var text: String { item.previewableText.shortened(to: 10_000) }
+  private var trimmedTitle: String { title.trimmingCharacters(in: .whitespacesAndNewlines) }
+  var displayTitle: String {
+    if !trimmedTitle.isEmpty {
+      return title
+    }
+
+    if hasImage {
+      return Bundle.main.localizedString(
+        forKey: "Images",
+        value: "Images",
+        table: "StorageSettings"
+      )
+    }
+
+    return title
+  }
+  var displayAttributedTitle: AttributedString? {
+    guard !trimmedTitle.isEmpty else {
+      return nil
+    }
+
+    return attributedTitle
+  }
 
   var isPinned: Bool { item.pin != nil }
   var isUnpinned: Bool { item.pin == nil }
@@ -67,9 +89,6 @@ class HistoryItemDecorator: Identifiable, Hashable, HasVisibility {
     self.shortcuts = shortcuts
     self.title = item.title
     self.applicationImage = ApplicationImageCache.shared.getImage(item: item)
-
-    synchronizeItemPin()
-    synchronizeItemTitle()
   }
 
   @MainActor
@@ -176,34 +195,42 @@ class HistoryItemDecorator: Identifiable, Hashable, HasVisibility {
   @MainActor
   func togglePin() {
     if item.pin != nil {
-      item.pin = nil
+      setPin(nil)
     } else {
-      let pin = HistoryItem.randomAvailablePin
-      item.pin = pin
+      setPin(HistoryItem.randomAvailablePin)
     }
   }
 
-  private func synchronizeItemPin() {
-    _ = withObservationTracking {
-      item.pin
-    } onChange: {
-      DispatchQueue.main.async {
-        if let pin = self.item.pin {
-          self.shortcuts = KeyShortcut.create(character: pin)
-        }
-        self.synchronizeItemPin()
-      }
+  @MainActor
+  func setPin(_ pin: String?) {
+    item.pin = pin
+    if let pin {
+      shortcuts = KeyShortcut.create(character: pin)
+    } else {
+      shortcuts = []
+    }
+
+    persistChanges()
+  }
+
+  @MainActor
+  func setTitle(_ title: String) {
+    self.title = title
+    item.title = title
+    persistChanges()
+  }
+
+  func refreshShortcutFromPin() {
+    if let pin = item.pin {
+      shortcuts = KeyShortcut.create(character: pin)
+    } else {
+      shortcuts = []
     }
   }
 
-  private func synchronizeItemTitle() {
-    _ = withObservationTracking {
-      item.title
-    } onChange: {
-      DispatchQueue.main.async {
-        self.title = self.item.title
-        self.synchronizeItemTitle()
-      }
-    }
+  @MainActor
+  func persistChanges() {
+    item.prepareForPersistence()
+    try? Storage.shared.store.save(item)
   }
 }

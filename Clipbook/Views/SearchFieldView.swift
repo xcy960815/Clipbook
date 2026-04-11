@@ -4,7 +4,7 @@ struct SearchFieldView: View {
   var placeholder: LocalizedStringKey
   @Binding var query: String
 
-  @Environment(AppState.self) private var appState
+  @EnvironmentObject private var appState: AppState
 
   var body: some View {
     ZStack {
@@ -43,11 +43,14 @@ struct SearchFieldView: View {
   }
 }
 
-#Preview {
-  return List {
-    SearchFieldView(placeholder: "search_placeholder", query: .constant(""))
-    SearchFieldView(placeholder: "search_placeholder", query: .constant("search"))
+private struct SearchFieldView_Previews: PreviewProvider {
+  static var previews: some View {
+    List {
+      SearchFieldView(placeholder: "search_placeholder", query: .constant(""))
+      SearchFieldView(placeholder: "search_placeholder", query: .constant("search"))
+    }
+    .frame(width: 300)
+    .environment(\.locale, .init(identifier: "en"))
+    .environmentObject(AppState.shared)
   }
-  .frame(width: 300)
-  .environment(\.locale, .init(identifier: "en"))
 }

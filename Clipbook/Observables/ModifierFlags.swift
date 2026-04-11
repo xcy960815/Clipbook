@@ -1,9 +1,9 @@
+import Combine
 import AppKit.NSEvent
 import Defaults
 
-@Observable
-class ModifierFlags {
-  var flags: NSEvent.ModifierFlags = []
+final class ModifierFlags: ObservableObject {
+  @Published var flags: NSEvent.ModifierFlags = []
 
   init() {
     NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { event in

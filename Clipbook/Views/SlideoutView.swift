@@ -25,7 +25,7 @@ extension View {
 
 struct SlideoutView<Content, Slideout>: View
 where Content: View, Slideout: View {
-  @Environment(AppState.self) private var appState
+  @EnvironmentObject private var appState: AppState
 
   let controller: SlideoutController
 
@@ -59,11 +59,7 @@ where Content: View, Slideout: View {
           window.isMovableByWindowBackground = !inside
         }
         if inside {
-          if #available(macOS 15.0, *) {
-            NSCursor.columnResize.push()
-          } else {
-            NSCursor.resizeLeftRight.push()
-          }
+          NSCursor.resizeLeftRight.push()
         } else {
           NSCursor.pop()
         }

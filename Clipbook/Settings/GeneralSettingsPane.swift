@@ -60,28 +60,35 @@ struct GeneralSettingsPane: View {
   @State private var pasteModifier = HistoryItemAction.paste.modifierFlags.description
   @State private var pasteWithoutFormatting = HistoryItemAction.pasteWithoutFormatting.modifierFlags.description
 
-  @State private var doubleClickRecorder = DoubleClickModifierRecorder()
+  @StateObject private var doubleClickRecorder = DoubleClickModifierRecorder()
+  @StateObject private var launchAtLoginController = LaunchAtLoginController()
   @State private var showResetSettingsConfirmation = false
-  @State private var updater = SoftwareUpdater()
+  @StateObject private var updater = SoftwareUpdater()
 
   var body: some View {
     Settings.Container(contentWidth: 450) {
       Settings.Section(title: "", bottomDivider: true) {
-        LaunchAtLogin.Toggle {
-          Text("LaunchAtLogin", tableName: "GeneralSettings")
-        }
+        LaunchAtLoginToggleRow(controller: launchAtLoginController)
         Toggle(isOn: $updater.automaticallyChecksForUpdates) {
           Text("CheckForUpdates", tableName: "GeneralSettings")
         }
+        .disabled(!updater.isAvailable)
         HStack(spacing: 8) {
           Button(
             action: { updater.checkForUpdates() },
             label: { Text("CheckNow", tableName: "GeneralSettings") }
           )
+          .disabled(!updater.canCheckForUpdates)
           Button(resetSettingsTitle, role: .destructive) {
             showResetSettingsConfirmation = true
           }
           Spacer(minLength: 0)
+        }
+        if let unavailableReason = updater.unavailableReason {
+          Text(unavailableReason)
+            .foregroundStyle(.secondary)
+            .controlSize(.small)
+            .fixedSize(horizontal: false, vertical: true)
         }
       }
 
@@ -123,7 +130,7 @@ struct GeneralSettingsPane: View {
           }
           .toggleStyle(.switch)
           .controlSize(.small)
-          .onChange(of: doubleClickPopupEnabled, initial: false) { _, isEnabled in
+          .onChange(of: doubleClickPopupEnabled) { isEnabled in
             updateDoubleClickMode(isEnabled)
           }
           Text(doubleClickLabel)
@@ -220,7 +227,10 @@ struct GeneralSettingsPane: View {
 
   private func updateDoubleClickMode(_ isEnabled: Bool) {
     if isEnabled {
-      Accessibility.check(accessibility: true, listenEvent: true)
+      Accessibility.check(
+        accessibility: true,
+        listenEvent: Accessibility.shouldPreflightListenEventAccessForDoubleClick
+      )
       doubleClickModifierKey = .none
     }
 
@@ -233,7 +243,7 @@ struct GeneralSettingsPane: View {
     }
 
     UserDefaults.standard.removePersistentDomain(forName: bundleIdentifier)
-    LaunchAtLogin.isEnabled = false
+    launchAtLoginController.isEnabled = false
     updater.automaticallyChecksForUpdates = false
     doubleClickRecorder.stop()
   }
@@ -248,6 +258,28 @@ struct GeneralSettingsPane: View {
 
   private func clearDoubleClickSelection() {
     doubleClickModifierKey = .none
+  }
+}
+
+private final class LaunchAtLoginController: ObservableObject {
+  @Published var isEnabled: Bool {
+    didSet {
+      LaunchAtLogin.isEnabled = isEnabled
+    }
+  }
+
+  init(isEnabled: Bool = LaunchAtLogin.isEnabled) {
+    self.isEnabled = isEnabled
+  }
+}
+
+private struct LaunchAtLoginToggleRow: View {
+  @ObservedObject var controller: LaunchAtLoginController
+
+  var body: some View {
+    Toggle(isOn: $controller.isEnabled) {
+      Text("LaunchAtLogin", tableName: "GeneralSettings")
+    }
   }
 }
 
@@ -291,8 +323,7 @@ private extension KeyboardShortcuts.Name {
   static let doubleClickModifierPresentation = Self("doubleClickModifierPresentation")
 }
 
-@Observable
-private final class DoubleClickModifierRecorder {
+private final class DoubleClickModifierRecorder: ObservableObject {
   var onSelection: ((DoubleClickModifierKey) -> Void)?
 
   private var monitor: Any?
@@ -330,7 +361,9 @@ private final class DoubleClickModifierRecorder {
   }
 }
 
-#Preview {
-  GeneralSettingsPane()
-    .environment(\.locale, .init(identifier: "en"))
+private struct GeneralSettingsPane_Previews: PreviewProvider {
+  static var previews: some View {
+    GeneralSettingsPane()
+      .environment(\.locale, .init(identifier: "en"))
+  }
 }

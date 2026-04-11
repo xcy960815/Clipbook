@@ -4,10 +4,14 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - "*"
+      - "v*"
 
 permissions:
   contents: write
+
+concurrency:
+  group: build-macos-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -32,9 +36,38 @@ jobs:
           -scheme Clipbook
           -configuration Release
           -derivedDataPath build
-          -destination 'platform=macOS'
+          -destination 'generic/platform=macOS'
+          ARCHS='x86_64 arm64'
+          ONLY_ACTIVE_ARCH=NO
           CODE_SIGNING_ALLOWED=NO
           build
+
+      - name: Ad-hoc sign app
+        run: >
+          codesign
+          --force
+          --deep
+          --sign -
+          build/Build/Products/Release/Clipbook.app
+
+      - name: Verify code signing
+        run: >
+          codesign
+          --verify
+          --deep
+          --strict
+          build/Build/Products/Release/Clipbook.app
+
+      - name: Verify universal app binary
+        run: |
+          APP_BINARY="build/Build/Products/Release/Clipbook.app/Contents/MacOS/Clipbook"
+          ARCH_INFO="$(lipo -info "$APP_BINARY")"
+          echo "$ARCH_INFO"
+
+          if [[ "$ARCH_INFO" != *"x86_64"* ]] || [[ "$ARCH_INFO" != *"arm64"* ]]; then
+            echo "Expected universal binary containing x86_64 and arm64"
+            exit 1
+          fi
 
       - name: Package app artifact
         run: >
@@ -59,7 +92,7 @@ jobs:
           retention-days: 7
 
       - name: Publish GitHub Release asset
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/v')
         env:
           GITHUB_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ github.ref_name }}
@@ -74,7 +107,7 @@ jobs:
           fi
 
       - name: Update appcast on master
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/v')
         env:
           TAG_NAME: ${{ github.ref_name }}
           SHORT_VERSION: ${{ steps.metadata.outputs.short_version }}

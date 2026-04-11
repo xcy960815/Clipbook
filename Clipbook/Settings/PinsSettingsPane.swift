@@ -1,15 +1,20 @@
-import SwiftData
 import SwiftUI
 
 struct PinPickerView: View {
-  @Bindable var item: HistoryItem
+  @ObservedObject var item: HistoryItemDecorator
   var availablePins: [String]
+  var onPinChanged: () -> Void = {}
 
   var body: some View {
-    if let pin = item.pin {
+    if let pin = item.item.pin {
       // Ensure unique pins for ForEach
       let uniquePins = Array(Set(availablePins + [pin])).sorted()
-      Picker("", selection: $item.pin) {
+      Picker("", selection: Binding(get: {
+        item.item.pin
+      }, set: { newValue in
+        item.setPin(newValue)
+        onPinChanged()
+      })) {
         ForEach(uniquePins, id: \.self) { pin in
           Text(pin)
             .tag(pin as String?)
@@ -22,30 +27,34 @@ struct PinPickerView: View {
 }
 
 struct PinTitleView: View {
-  @Bindable var item: HistoryItem
+  @ObservedObject var item: HistoryItemDecorator
 
   var body: some View {
-    TextField("", text: $item.title)
+    TextField("", text: Binding(get: {
+      item.title
+    }, set: { newValue in
+      item.setTitle(newValue)
+    }))
   }
 }
 
 struct PinValueView: View {
-  @Bindable var item: HistoryItem
+  @ObservedObject var item: HistoryItemDecorator
   @State private var editableValue: String
   @State private var isTextContent: Bool
   @State private var isRichText: Bool
   @FocusState private var isEditing: Bool
   @State private var showWarningPopover: Bool = false
 
-  init(item: HistoryItem) {
+  init(item: HistoryItemDecorator) {
     self.item = item
-    self._editableValue = State(initialValue: item.previewableText)
+    self._editableValue = State(initialValue: item.item.previewableText)
 
     // Check if this item has editable text content
-    let hasPlainText = item.text != nil
-    let hasImage = item.image != nil
-    let hasFileURLs = !item.fileURLs.isEmpty
-    let hasRichText = item.rtf != nil || item.html != nil
+    let hasPlainText = item.item.text != nil
+    let hasImage = item.item.image != nil
+    let hasFileURLs = !item.item.fileURLs.isEmpty
+    let hasRichText = item.item.rtf != nil || item.item.html != nil
 
     // Consider it text content only if it has plain text and doesn't have images or file URLs
     self._isTextContent = State(initialValue: hasPlainText && !hasImage && !hasFileURLs)
@@ -61,7 +70,7 @@ struct PinValueView: View {
             .onSubmit {
               updateItemContent()
             }
-            .onChange(of: editableValue) { _, _ in
+            .onChange(of: editableValue) { _ in
               updateItemContent()
             }
             .padding(.trailing, isRichText ? 40 : 0) // increased space for icon
@@ -82,7 +91,6 @@ struct PinValueView: View {
         // Non-editable display for non-text content
         Text("ContentIsNotText", tableName: "PinsSettings")
           .foregroundStyle(.secondary)
-          .italic()
       }
     }
   }
@@ -93,51 +101,48 @@ struct PinValueView: View {
 
     // Remove all non-plain-text content
     let stringType = NSPasteboard.PasteboardType.string.rawValue
-    item.contents.removeAll { $0.type != stringType }
+    item.item.contents.removeAll { $0.type != stringType }
 
     // Update or add the plain text content
-    if let index = item.contents.firstIndex(where: { $0.type == stringType }) {
+    if let index = item.item.contents.firstIndex(where: { $0.type == stringType }) {
       if let data = editableValue.data(using: .utf8) {
-        item.contents[index].value = data
+        item.item.contents[index].value = data
       }
     } else {
       if let data = editableValue.data(using: .utf8) {
         let newContent = HistoryItemContent(type: stringType, value: data)
-        item.contents.append(newContent)
+        item.item.contents.append(newContent)
       }
     }
+
+    item.persistChanges()
     // We don't automatically update title here since we want to preserve
     // OCR-extracted titles for images and other non-text content
   }
 }
 
 struct PinsSettingsPane: View {
-  @Environment(AppState.self) private var appState
-  @Environment(\.modelContext) private var modelContext
-
-  @Query(filter: #Predicate<HistoryItem> { $0.pin != nil }, sort: \.firstCopiedAt)
-  private var items: [HistoryItem]
+  @EnvironmentObject private var appState: AppState
 
   @State private var availablePins: [String] = []
-  @State private var selection: PersistentIdentifier?
+  @State private var selection: HistoryItemDecorator.ID?
 
   var body: some View {
     VStack(alignment: .leading) {
-      Table(items, selection: $selection) {
-        TableColumn(Text("Key", tableName: "PinsSettings")) { item in
-          PinPickerView(item: item, availablePins: availablePins)
-            .onChange(of: item.pin) {
-              availablePins = HistoryItem.availablePins
-            }
+      Table(appState.history.pinnedItems, selection: $selection) {
+        TableColumn(NSLocalizedString("Key", tableName: "PinsSettings", comment: "")) { itemDecorator in
+          PinPickerView(item: itemDecorator, availablePins: availablePins) {
+            availablePins = HistoryItem.availablePins
+          }
         }
         .width(60)
 
-        TableColumn(Text("Alias", tableName: "PinsSettings")) { item in
-          PinTitleView(item: item)
+        TableColumn(NSLocalizedString("Alias", tableName: "PinsSettings", comment: "")) { itemDecorator in
+          PinTitleView(item: itemDecorator)
         }
 
-        TableColumn(Text("Content", tableName: "PinsSettings")) { item in
-          PinValueView(item: item)
+        TableColumn(NSLocalizedString("Content", tableName: "PinsSettings", comment: "")) { itemDecorator in
+          PinValueView(item: itemDecorator)
         }
       }
       .onAppear {
@@ -145,7 +150,7 @@ struct PinsSettingsPane: View {
       }
       .onDeleteCommand {
         guard let selection,
-              let item = appState.history.items.first(where: { $0.item.id == selection }) else {
+              let item = appState.history.items.first(where: { $0.id == selection }) else {
           return
         }
 
@@ -161,8 +166,10 @@ struct PinsSettingsPane: View {
   }
 }
 
-#Preview {
-  return PinsSettingsPane()
-    .environment(\.locale, .init(identifier: "en"))
-    .modelContainer(Storage.shared.container)
+private struct PinsSettingsPane_Previews: PreviewProvider {
+  static var previews: some View {
+    PinsSettingsPane()
+      .environment(\.locale, .init(identifier: "en"))
+      .environmentObject(AppState.shared)
+  }
 }

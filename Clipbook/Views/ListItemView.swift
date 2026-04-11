@@ -8,23 +8,94 @@ enum SelectionAppearance {
   case topBottomConnection
 
   func rect(cornerRadius: CGFloat) -> some Shape {
-    var cornerRadii = RectangleCornerRadii()
     switch self {
     case .none:
-      cornerRadii.topLeading = cornerRadius
-      cornerRadii.topTrailing = cornerRadius
-      cornerRadii.bottomLeading = cornerRadius
-      cornerRadii.bottomTrailing = cornerRadius
+      return SelectionShape(
+        topLeading: cornerRadius,
+        topTrailing: cornerRadius,
+        bottomLeading: cornerRadius,
+        bottomTrailing: cornerRadius
+      )
     case .topConnection:
-      cornerRadii.bottomLeading = cornerRadius
-      cornerRadii.bottomTrailing = cornerRadius
+      return SelectionShape(
+        bottomLeading: cornerRadius,
+        bottomTrailing: cornerRadius
+      )
     case .bottomConnection:
-      cornerRadii.topLeading = cornerRadius
-      cornerRadii.topTrailing = cornerRadius
+      return SelectionShape(
+        topLeading: cornerRadius,
+        topTrailing: cornerRadius
+      )
     case .topBottomConnection:
-      break
+      return SelectionShape()
     }
-    return .rect(cornerRadii: cornerRadii)
+  }
+}
+
+private struct SelectionShape: Shape {
+  var topLeading: CGFloat = 0
+  var topTrailing: CGFloat = 0
+  var bottomLeading: CGFloat = 0
+  var bottomTrailing: CGFloat = 0
+
+  func path(in rect: CGRect) -> Path {
+    let topLeading = min(topLeading, min(rect.width, rect.height) / 2)
+    let topTrailing = min(topTrailing, min(rect.width, rect.height) / 2)
+    let bottomLeading = min(bottomLeading, min(rect.width, rect.height) / 2)
+    let bottomTrailing = min(bottomTrailing, min(rect.width, rect.height) / 2)
+
+    var path = Path()
+    path.move(to: CGPoint(x: rect.minX + topLeading, y: rect.minY))
+    path.addLine(to: CGPoint(x: rect.maxX - topTrailing, y: rect.minY))
+
+    if topTrailing > 0 {
+      path.addArc(
+        center: CGPoint(x: rect.maxX - topTrailing, y: rect.minY + topTrailing),
+        radius: topTrailing,
+        startAngle: .degrees(-90),
+        endAngle: .degrees(0),
+        clockwise: false
+      )
+    }
+
+    path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - bottomTrailing))
+
+    if bottomTrailing > 0 {
+      path.addArc(
+        center: CGPoint(x: rect.maxX - bottomTrailing, y: rect.maxY - bottomTrailing),
+        radius: bottomTrailing,
+        startAngle: .degrees(0),
+        endAngle: .degrees(90),
+        clockwise: false
+      )
+    }
+
+    path.addLine(to: CGPoint(x: rect.minX + bottomLeading, y: rect.maxY))
+
+    if bottomLeading > 0 {
+      path.addArc(
+        center: CGPoint(x: rect.minX + bottomLeading, y: rect.maxY - bottomLeading),
+        radius: bottomLeading,
+        startAngle: .degrees(90),
+        endAngle: .degrees(180),
+        clockwise: false
+      )
+    }
+
+    path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + topLeading))
+
+    if topLeading > 0 {
+      path.addArc(
+        center: CGPoint(x: rect.minX + topLeading, y: rect.minY + topLeading),
+        radius: topLeading,
+        startAngle: .degrees(180),
+        endAngle: .degrees(270),
+        clockwise: false
+      )
+    }
+
+    path.closeSubpath()
+    return path
   }
 }
 
@@ -43,8 +114,19 @@ struct ListItemView<Title: View, ID: Hashable>: View {
   @ViewBuilder var title: () -> Title
 
   @Default(.showApplicationIcons) private var showIcons
-  @Environment(AppState.self) private var appState
-  @Environment(ModifierFlags.self) private var modifierFlags
+  @Default(.imageMaxHeight) private var imageMaxHeight
+  @EnvironmentObject private var modifierFlags: ModifierFlags
+
+  private var imagePreviewHeight: CGFloat {
+    max(
+      Popup.itemHeight,
+      min(CGFloat(imageMaxHeight), Popup.itemHeight + 6)
+    )
+  }
+
+  private var imagePreviewWidth: CGFloat {
+    max(imagePreviewHeight, min(imagePreviewHeight * 1.5, 56))
+  }
 
   var body: some View {
     HStack(spacing: 0) {
@@ -64,19 +146,30 @@ struct ListItemView<Title: View, ID: Hashable>: View {
       if let accessoryImage {
         Image(nsImage: accessoryImage)
           .accessibilityIdentifier("copy-history-item")
+          .frame(width: Popup.itemHeight, height: Popup.itemHeight)
           .padding(.trailing, 5)
           .padding(.vertical, 5)
       }
 
       if let image {
         Image(nsImage: image)
+          .resizable()
+          .scaledToFit()
           .accessibilityIdentifier("copy-history-item")
+          .frame(width: imagePreviewWidth, height: imagePreviewHeight)
+          .background(
+            Color.primary.opacity(0.06),
+            in: RoundedRectangle(cornerRadius: 4, style: .continuous)
+          )
+          .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
           .padding(.trailing, 5)
-          .padding(.vertical, 5)
-      } else {
-        ListItemTitleView(attributedTitle: attributedTitle, title: title)
-          .padding(.trailing, 5)
+          .padding(.vertical, 3)
       }
+
+      ListItemTitleView(attributedTitle: attributedTitle, title: title)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.trailing, 5)
+        .layoutPriority(1)
 
       Spacer()
 

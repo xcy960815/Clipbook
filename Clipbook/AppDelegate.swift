@@ -1,3 +1,4 @@
+import Combine
 import Defaults
 import KeyboardShortcuts
 import Sparkle
@@ -22,6 +23,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   }
 
   private var statusItemVisibilityObserver: NSKeyValueObservation?
+  private var menuIconTextObserver: AnyCancellable?
 
   func applicationWillFinishLaunching(_ notification: Notification) { // swiftlint:disable:this function_body_length
     #if DEBUG
@@ -170,21 +172,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   }
 
   private func synchronizeMenuIconText() {
-    _ = withObservationTracking {
-      AppState.shared.menuIconText
-    } onChange: {
+    menuIconTextObserver = AppState.shared.objectWillChange.sink { [weak self] _ in
       DispatchQueue.main.async {
+        guard let self else { return }
         if Defaults[.showRecentCopyInMenuBar] {
           self.statusItem.button?.title = AppState.shared.menuIconText
         }
-        self.synchronizeMenuIconText()
       }
     }
   }
 
   private func disableUnusedGlobalHotkeys() {
     let names: [KeyboardShortcuts.Name] = [.delete, .pin]
-    KeyboardShortcuts.disable(names)
+    names.forEach(KeyboardShortcuts.disable)
 
     NotificationCenter.default.addObserver(
       forName: Notification.Name("KeyboardShortcuts_shortcutByNameDidChange"),

@@ -1,6 +1,7 @@
 import Foundation
 import AppIntents
 
+@available(macOS 13.0, *)
 struct Get: AppIntent, CustomIntentMigratedAppIntent {
   static let intentClassName = "GetIntent"
 

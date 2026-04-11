@@ -4,6 +4,15 @@ import XCTest
 // swiftlint:disable file_length
 // swiftlint:disable type_body_length
 class ClipbookUITests: XCTestCase {
+  private static let applicationSupportDirectory: URL = {
+    try! FileManager.default.url(
+      for: .applicationSupportDirectory,
+      in: .userDomainMask,
+      appropriateFor: nil,
+      create: true
+    )
+  }()
+
   let app = XCUIApplication()
   let finder = XCUIApplication(bundleIdentifier: "com.apple.finder")
   let pasteboard = NSPasteboard.general
@@ -16,8 +25,8 @@ class ClipbookUITests: XCTestCase {
   let image1 = NSImage(named: "NSAddTemplate")!
   let image2 = NSImage(named: "NSBluetoothTemplate")!
 
-  let file1 = URL.applicationSupportDirectory.appendingPathComponent("file1.txt")
-  let file2 = URL.applicationSupportDirectory.appendingPathComponent("file2.txt")
+  let file1 = applicationSupportDirectory.appendingPathComponent("file1.txt")
+  let file2 = applicationSupportDirectory.appendingPathComponent("file2.txt")
 
   let rtf1 = NSAttributedString(string: "foo").rtf(
     from: NSRange(0...2),
@@ -621,12 +630,18 @@ class ClipbookUITests: XCTestCase {
 
   private func waitUntilPoppedUp() {
     if !app.staticTexts.firstMatch.waitForExistence(timeout: 3) {
-      XCTFail("Maccy did not pop up")
+      XCTFail("Clipbook did not pop up")
     }
   }
 
   private func assertPopupDismissed() {
-    if !app.staticTexts.firstMatch.waitForNonExistence(timeout: 3) {
+    let predicate = NSPredicate(format: "exists == false")
+    let expectation = XCTNSPredicateExpectation(
+      predicate: predicate,
+      object: app.staticTexts.firstMatch
+    )
+
+    if XCTWaiter().wait(for: [expectation], timeout: 3) != .completed {
       XCTFail("Clipbook did not dismiss")
     }
   }
@@ -658,7 +673,7 @@ class ClipbookUITests: XCTestCase {
     waitTillClipboardCheck()
   }
 
-  // Default interval for Maccy to check clipboard is 1 second
+  // Default interval for Clipbook to check clipboard is 1 second
   private func waitTillClipboardCheck() {
     usleep(1_500_000)
   }

@@ -2,6 +2,14 @@ import AppKit
 import ApplicationServices
 
 struct Accessibility {
+  static var shouldPreflightListenEventAccessForDoubleClick: Bool {
+    if #available(macOS 13.0, *) {
+      return true
+    }
+
+    return false
+  }
+
   private static var hasAccessibilityAccess: Bool {
     AXIsProcessTrustedWithOptions(nil)
   }

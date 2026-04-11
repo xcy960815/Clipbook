@@ -28,9 +28,11 @@ struct GlassEffectView: View {
   }
 }
 
-#Preview {
-  VisualEffectView(
-    material: .popover,
-    blendingMode: .behindWindow
-  )
+private struct VisualEffectView_Previews: PreviewProvider {
+  static var previews: some View {
+    VisualEffectView(
+      material: .popover,
+      blendingMode: .behindWindow
+    )
+  }
 }

@@ -43,7 +43,9 @@ struct AdvancedSettingsPane: View {
   }
 }
 
-#Preview {
-  AdvancedSettingsPane()
-    .environment(\.locale, .init(identifier: "en"))
+private struct AdvancedSettingsPane_Previews: PreviewProvider {
+  static var previews: some View {
+    AdvancedSettingsPane()
+      .environment(\.locale, .init(identifier: "en"))
+  }
 }

@@ -1,6 +1,7 @@
 import AppIntents
 import Defaults
 
+@available(macOS 13.0, *)
 struct Clear: AppIntent, CustomIntentMigratedAppIntent {
   static let intentClassName = "ClearIntent"
 

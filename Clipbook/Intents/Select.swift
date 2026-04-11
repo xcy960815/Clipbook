@@ -1,5 +1,6 @@
 import AppIntents
 
+@available(macOS 13.0, *)
 struct Select: AppIntent, CustomIntentMigratedAppIntent {
   static let intentClassName = "SelectIntent"
 

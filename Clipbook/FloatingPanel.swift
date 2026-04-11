@@ -38,7 +38,11 @@ class FloatingPanel<Content: View>: NSPanel, NSWindowDelegate {
     animationBehavior = .none
     isFloatingPanel = true
     level = .statusBar
-    collectionBehavior = [.auxiliary, .stationary, .moveToActiveSpace, .fullScreenAuxiliary]
+    if #available(macOS 13.0, *) {
+      collectionBehavior = [.auxiliary, .stationary, .moveToActiveSpace, .fullScreenAuxiliary]
+    } else {
+      collectionBehavior = [.stationary, .moveToActiveSpace, .fullScreenAuxiliary]
+    }
     titleVisibility = .hidden
     titlebarAppearsTransparent = true
     isMovableByWindowBackground = true

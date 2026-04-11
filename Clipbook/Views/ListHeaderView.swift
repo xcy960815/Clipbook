@@ -6,7 +6,7 @@ struct ListHeaderView: View {
   @FocusState.Binding var searchFocused: Bool
   @Binding var searchQuery: String
 
-  @Environment(AppState.self) private var appState
+  @EnvironmentObject private var appState: AppState
   @Environment(\.scenePhase) private var scenePhase
 
   @Default(.showTitle) private var showTitle
@@ -22,8 +22,8 @@ struct ListHeaderView: View {
       SearchFieldView(placeholder: "search_placeholder", query: $searchQuery)
         .focused($searchFocused)
         .frame(maxWidth: .infinity)
-        .onChange(of: scenePhase) {
-          if scenePhase == .background && !searchQuery.isEmpty {
+        .onChange(of: scenePhase) { newScenePhase in
+          if newScenePhase == .background && !searchQuery.isEmpty {
             searchQuery = ""
           }
         }

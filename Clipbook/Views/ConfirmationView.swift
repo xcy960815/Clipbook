@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ConfirmationView<Content: View>: View {
-  @Bindable var item: FooterItem
+  @ObservedObject var item: FooterItem
   @ViewBuilder let content: () -> Content
 
   var body: some View {
@@ -14,19 +14,22 @@ struct ConfirmationView<Content: View>: View {
             item.showConfirmation = true
           }
         }
-        .confirmationDialog(confirmation.message, isPresented: $item.showConfirmation) {
+        .confirmationDialog(confirmation.message, isPresented: Binding(get: {
+          item.showConfirmation
+        }, set: { newValue in
+          item.showConfirmation = newValue
+        })) {
           Text(confirmation.comment)
           Button(confirmation.confirm, role: .destructive) {
             item.action()
           }
           Button(confirmation.cancel, role: .cancel) {}
         }
-        .dialogSuppressionToggle(isSuppressed: suppressConfirmation)
     } else {
       content()
         .onTapGesture {
           item.action()
-        }
+      }
     }
   }
 }

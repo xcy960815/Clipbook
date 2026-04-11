@@ -2,10 +2,17 @@ import Defaults
 import SwiftUI
 
 struct HeaderView: View {
-  @State private var appState = AppState.shared
+  @EnvironmentObject private var appState: AppState
 
   let controller: SlideoutController
   @FocusState.Binding var searchFocused: Bool
+
+  private var searchQueryBinding: Binding<String> {
+    Binding(
+      get: { appState.history.searchQuery },
+      set: { appState.history.searchQuery = $0 }
+    )
+  }
 
   var previewPlacement: SlideoutPlacement {
     return controller.placement
@@ -16,7 +23,7 @@ struct HeaderView: View {
       HStack(alignment: .center, spacing: 0) {
         ListHeaderView(
           searchFocused: $searchFocused,
-          searchQuery: $appState.history.searchQuery
+          searchQuery: searchQueryBinding
         )
         .padding(.horizontal, Popup.horizontalPadding)
 

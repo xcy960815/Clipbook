@@ -56,10 +56,10 @@ struct CollapsedStackItem<Content: View>: View {
 }
 
 struct PasteStackView: View {
-  var stack: PasteStack
+  @ObservedObject var stack: PasteStack
   var open: Bool = false
 
-  @Environment(AppState.self) private var appState
+  @EnvironmentObject private var appState: AppState
 
   private func indexTagFor(_ index: Int) -> Int? {
     if open {
@@ -86,7 +86,7 @@ struct PasteStackView: View {
           .background(
             appState.navigator.pasteStackSelected
               ? Color.accentColor.opacity(0.8)
-              : Color(nsColor: .tertiarySystemFill).opacity(0.8)
+              : Color(nsColor: .controlBackgroundColor).opacity(0.8)
           )
           .background(.thinMaterial)
           .clipShape(SelectionAppearance.none.rect(cornerRadius: Popup.cornerRadius))

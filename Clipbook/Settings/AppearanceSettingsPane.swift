@@ -221,7 +221,9 @@ struct AppearanceSettingsPane: View {
   }
 }
 
-#Preview {
-  AppearanceSettingsPane()
-    .environment(\.locale, .init(identifier: "en"))
+private struct AppearanceSettingsPane_Previews: PreviewProvider {
+  static var previews: some View {
+    AppearanceSettingsPane()
+      .environment(\.locale, .init(identifier: "en"))
+  }
 }

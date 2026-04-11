@@ -1,5 +1,6 @@
 import AppIntents
 
+@available(macOS 13.0, *)
 struct Delete: AppIntent, CustomIntentMigratedAppIntent {
   static let intentClassName = "DeleteIntent"
 

@@ -1,25 +1,27 @@
 // swiftlint:disable file_length
 import AppKit.NSRunningApplication
+import Combine
 import Defaults
 import Foundation
 import Logging
-import Observation
 import Sauce
 import Settings
-import SwiftData
 
-@Observable
-class History: ItemsContainer { // swiftlint:disable:this type_body_length
+final class History: ObservableObject, ItemsContainer { // swiftlint:disable:this type_body_length
   static let shared = History()
   let logger = Logger(label: "org.p0deje.Clipbook")
 
-  var items: [HistoryItemDecorator] = []
-  var pasteStack: PasteStack?
+  @Published var items: [HistoryItemDecorator] = [] {
+    didSet {
+      observeItems()
+    }
+  }
+  @Published var pasteStack: PasteStack?
 
   var pinnedItems: [HistoryItemDecorator] { items.filter(\.isPinned) }
   var unpinnedItems: [HistoryItemDecorator] { items.filter(\.isUnpinned) }
 
-  var searchQuery: String = "" {
+  @Published var searchQuery: String = "" {
     didSet {
       throttler.throttle { [self] in
         updateItems(search.search(string: searchQuery, within: all))
@@ -56,16 +58,17 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
   private let sorter = Sorter()
   private let throttler = Throttler(minimumDelay: 0.2)
 
-  @ObservationIgnored
   private var sessionLog: [Int: HistoryItem] = [:]
 
   // The distinction between `all` and `items` is the following:
   // - `all` stores all history items, even the ones that are currently hidden by a search
   // - `items` stores only visible history items, updated during a search
-  @ObservationIgnored
   var all: [HistoryItemDecorator] = []
+  private var itemObservers: [AnyCancellable] = []
 
   init() {
+    observeItems()
+
     Task {
       for await _ in Defaults.updates(.pasteByDefault, initial: false) {
         updateShortcuts()
@@ -103,8 +106,7 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
 
   @MainActor
   func load() async throws {
-    let descriptor = FetchDescriptor<HistoryItem>()
-    let results = try Storage.shared.context.fetch(descriptor)
+    let results = try Storage.shared.store.loadItems()
     all = sorter.sort(results).map { HistoryItemDecorator($0) }
     items = all
 
@@ -121,28 +123,21 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
   private func limitHistorySize(to maxSize: Int) {
     let unpinned = all.filter(\.isUnpinned)
     if unpinned.count >= maxSize {
-      unpinned[maxSize...].forEach(delete)
+      for item in unpinned[maxSize...] {
+        delete(item)
+      }
     }
   }
 
   @MainActor
   func insertIntoStorage(_ item: HistoryItem) throws {
     logger.info("Inserting item with id '\(item.title)'")
-    Storage.shared.context.insert(item)
-    Storage.shared.context.processPendingChanges()
-    try? Storage.shared.context.save()
+    try Storage.shared.store.save(item)
   }
 
   @discardableResult
   @MainActor
   func add(_ item: HistoryItem) -> HistoryItemDecorator {
-    if #available(macOS 15.0, *) {
-      try? History.shared.insertIntoStorage(item)
-    } else {
-      // On macOS 14 the history item needs to be inserted into storage directly after creating it.
-      // It was already inserted after creation in Clipboard.swift
-    }
-
     var removedItemIndex: Int?
     if let existingHistoryItem = findSimilarItem(item) {
       if isModified(item) == nil {
@@ -156,7 +151,7 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
         item.application = existingHistoryItem.application
       }
       logger.info("Removing duplicate item '\(item.title)'")
-      Storage.shared.context.delete(existingHistoryItem)
+      try? Storage.shared.store.delete(existingHistoryItem)
       removedItemIndex = all.firstIndex(where: { $0.item == existingHistoryItem })
       if let removedItemIndex {
         all.remove(at: removedItemIndex)
@@ -166,6 +161,9 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
         Notifier.notify(body: item.title, sound: .write)
       }
     }
+
+    item.prepareForPersistence()
+    try? Storage.shared.store.save(item)
 
     // Remove exceeding items. Do this after the item is added to avoid removing something
     // if a duplicate was found as then the size already stayed the same.
@@ -199,9 +197,8 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
   @MainActor
   private func withLogging(_ msg: String, _ block: () throws -> Void) rethrows {
     func dataCounts() -> String {
-      let historyItemCount = try? Storage.shared.context.fetchCount(FetchDescriptor<HistoryItem>())
-      let historyContentCount = try? Storage.shared.context.fetchCount(FetchDescriptor<HistoryItemContent>())
-      return "HistoryItem=\(historyItemCount ?? 0) HistoryItemContent=\(historyContentCount ?? 0)"
+      let counts = Storage.shared.store.fetchCounts()
+      return "HistoryItem=\(counts.items) HistoryItemContent=\(counts.contents)"
     }
 
     logger.info("\(msg) Before: \(dataCounts())")
@@ -221,18 +218,7 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
       sessionLog.removeValues { $0.pin == nil }
       items = all
 
-      try? Storage.shared.context.transaction {
-        try? Storage.shared.context.delete(
-          model: HistoryItem.self,
-          where: #Predicate { $0.pin == nil }
-        )
-        try? Storage.shared.context.delete(
-          model: HistoryItemContent.self,
-          where: #Predicate { $0.item?.pin == nil }
-        )
-      }
-      Storage.shared.context.processPendingChanges()
-      try? Storage.shared.context.save()
+      try? Storage.shared.store.deleteUnpinned()
     }
 
     Clipboard.shared.clear()
@@ -252,9 +238,7 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
       sessionLog.removeAll()
       items = all
 
-      try? Storage.shared.context.delete(model: HistoryItem.self)
-      Storage.shared.context.processPendingChanges()
-      try? Storage.shared.context.save()
+      try? Storage.shared.store.deleteAll()
     }
 
     Clipboard.shared.clear()
@@ -270,9 +254,7 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
 
     cleanup(item)
     withLogging("Removing history item") {
-      Storage.shared.context.delete(item.item)
-      Storage.shared.context.processPendingChanges()
-      try? Storage.shared.context.save()
+      try? Storage.shared.store.delete(item.item)
     }
 
     all.removeAll { $0 == item }
@@ -445,8 +427,7 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
 
   @MainActor
   private func findSimilarItem(_ item: HistoryItem) -> HistoryItem? {
-    let descriptor = FetchDescriptor<HistoryItem>()
-    if let all = try? Storage.shared.context.fetch(descriptor) {
+    if let all = try? Storage.shared.store.loadItems() {
       let duplicates = all.filter({ $0 == item || $0.supersedes(item) })
       if duplicates.count > 1 {
         return duplicates.first(where: { $0 != item })
@@ -479,9 +460,7 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
 
   private func updateShortcuts() {
     for item in pinnedItems {
-      if let pin = item.item.pin {
-        item.shortcuts = KeyShortcut.create(character: pin)
-      }
+      item.refreshShortcutFromPin()
     }
 
     updateUnpinnedShortcuts()
@@ -489,8 +468,7 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
 
   @MainActor
   private func updateTitle(item: HistoryItemDecorator, title: String) {
-    item.title = title
-    item.item.title = title
+    item.setTitle(title)
   }
 
   private func updateUnpinnedShortcuts() {
@@ -503,6 +481,14 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
     for item in visibleUnpinnedItems.prefix(9) {
       item.shortcuts = KeyShortcut.create(character: String(index))
       index += 1
+    }
+  }
+
+  private func observeItems() {
+    itemObservers = items.map { item in
+      item.objectWillChange.sink { [weak self] _ in
+        self?.objectWillChange.send()
+      }
     }
   }
 }

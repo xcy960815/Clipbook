@@ -1,8 +1,8 @@
 import AppKit.NSRunningApplication
+import Combine
 import CoreGraphics
 import Defaults
 import KeyboardShortcuts
-import Observation
 
 enum PopupState {
   // Default; shortcut will toggle the popup
@@ -22,8 +22,7 @@ enum PopupOpenTriggerConfiguration: Equatable {
   case doubleClick
 }
 
-@Observable
-class Popup {
+final class Popup: ObservableObject {
   static let verticalSeparatorPadding = 6.0
   static let horizontalSeparatorPadding = 6.0
   static let verticalPadding: CGFloat = 5
@@ -32,41 +31,40 @@ class Popup {
 
   // Radius used for items inset by the padding. Ensures they visually have the same curvature
   // as the menu.
-  static let cornerRadius: CGFloat = if #available(macOS 26.0, *) {
-    7
-  } else {
-    4
-  }
+  static let cornerRadius: CGFloat = {
+    if #available(macOS 26.0, *) {
+      return 7
+    } else {
+      return 4
+    }
+  }()
 
-  static let itemHeight: CGFloat = if #available(macOS 26.0, *) {
-    24
-  } else {
-    22
-  }
+  static let itemHeight: CGFloat = {
+    if #available(macOS 26.0, *) {
+      return 24
+    } else {
+      return 22
+    }
+  }()
 
-  var needsResize = false
-  var height: CGFloat = 0
-  var headerHeight: CGFloat = 0
-  var extraTopHeight: CGFloat = 0
-  var extraBottomHeight: CGFloat = 0
-  var footerHeight: CGFloat = 0
+  @Published var needsResize = false
+  @Published var height: CGFloat = 0
+  @Published var headerHeight: CGFloat = 0
+  @Published var extraTopHeight: CGFloat = 0
+  @Published var extraBottomHeight: CGFloat = 0
+  @Published var footerHeight: CGFloat = 0
 
-  @ObservationIgnored
   private var popupEventsMonitor: Any?
 
-  @ObservationIgnored
   private var doubleClickLocalMonitor: Any?
 
-  @ObservationIgnored
   private var doubleClickGlobalMonitor = DoubleClickGlobalMonitor()
 
-  @ObservationIgnored
   private var appDidBecomeActiveObserver: NSObjectProtocol?
 
   private var state: PopupState = .toggle
   private var isSettingsWindowPresented = false
 
-  @ObservationIgnored
   private var doubleClickKeyDetector = DoubleClickModifierKeyDetector()
 
   private var isDoubleClickPopupRequested: Bool {
@@ -82,7 +80,12 @@ class Popup {
   }
 
   private var hasDoubleClickAccess: Bool {
-    Accessibility.hasAccess(accessibility: true, listenEvent: true)
+    // Keep the source project's stricter listen-event preflight on newer macOS
+    // versions, but avoid the known false-negative path on macOS 12 ad-hoc builds.
+    Accessibility.hasAccess(
+      accessibility: true,
+      listenEvent: Accessibility.shouldPreflightListenEventAccessForDoubleClick
+    )
   }
 
   private var openTriggerConfiguration: PopupOpenTriggerConfiguration {
@@ -162,7 +165,10 @@ class Popup {
     }
 
     guard !doubleClickGlobalMonitor.isRunning else { return }
-    guard Accessibility.check(accessibility: true, listenEvent: true) else { return }
+    guard Accessibility.check(
+      accessibility: true,
+      listenEvent: Accessibility.shouldPreflightListenEventAccessForDoubleClick
+    ) else { return }
 
     doubleClickGlobalMonitor.start()
   }
@@ -199,6 +205,7 @@ class Popup {
   func open(height: CGFloat, at popupPosition: PopupPosition = Defaults[.popupPosition]) {
     AppState.shared.appDelegate?.panel.open(height: height, at: popupPosition)
   }
+
 
   func reset() {
     state = .toggle

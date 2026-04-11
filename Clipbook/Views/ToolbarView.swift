@@ -28,10 +28,10 @@ private struct KeyboardShortcutHelpModifier: ViewModifier {
 }
 
 struct ToolbarButton<Label: View>: View {
-  @Environment(AppState.self) private var appState
+  @EnvironmentObject private var appState: AppState
 
-  let action: @MainActor () -> Void
-  let label: () -> Label
+  let action: () -> Void
+  @ViewBuilder let label: () -> Label
 
   var body: some View {
     Button(action: action) {
@@ -65,7 +65,7 @@ struct ToolbarButton<Label: View>: View {
 }
 
 struct ToolbarView: View {
-  @State private var appState = AppState.shared
+  @EnvironmentObject private var appState: AppState
 
   @Namespace var unionNamespace
 
