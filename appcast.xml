@@ -1,23 +1,21 @@
-<?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><!-- sparkle-sign-warning:
+IMPORTANT: This file was signed by Sparkle. Any modifications to this file requires re-signing this file with generate_appcast or sign_update! The signed signature will be embedded at the end of this file.
+--><rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0">
   <channel>
     <title>Clipbook</title>
     <link>https://raw.githubusercontent.com/xcy960815/Clipbook/master/appcast.xml</link>
     <description>Most recent changes with links to updates.</description>
     <language>en</language>
     <item>
-      <title>0.0.6</title>
+      <title>0.0.9</title>
       <description><![CDATA[<p>See the release notes for details.</p>]]></description>
-      <pubDate>Wed, 22 Apr 2026 02:39:41 GMT</pubDate>
-      <releaseNotesLink>https://github.com/xcy960815/Clipbook/releases/tag/v0.0.8</releaseNotesLink>
+      <pubDate>Wed, 22 Apr 2026 02:57:55 GMT</pubDate>
+      <releaseNotesLink>https://github.com/xcy960815/Clipbook/releases/tag/v0.0.9</releaseNotesLink>
       <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-      <enclosure
-        url="https://github.com/xcy960815/Clipbook/releases/download/v0.0.8/Clipbook-v0.0.8-unsigned.app.zip"
-        sparkle:version="6"
-        sparkle:shortVersionString="0.0.6"
-        length="3605387"
-        type="application/octet-stream"
-      />
+      <enclosure url="https://github.com/xcy960815/Clipbook/releases/download/v0.0.9/Clipbook-v0.0.9-unsigned.app.zip" sparkle:version="9" sparkle:shortVersionString="0.0.9" sparkle:edSignature="+cj9L5X3HGNvoQ//7bYFePBhuYikUSnsbJitDapy8ArqZjCtU/OZSuXcCy1f/2NFImOoZJqUg80WShgl3QIIBQ==" length="3605440" type="application/octet-stream"></enclosure>
     </item>
   </channel>
-</rss>
+</rss><!-- sparkle-signatures:
+edSignature: mgYw2Hvq37wERqwlnxCPKSaPPuKuEy+gdScnWEMmol2jEUp5MwyVWc0kwWY7zpRqDnPpXUUu2fe+Uy5korA1BA==
+length: 1385
+-->
