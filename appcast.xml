@@ -9,13 +9,13 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     <item>
       <title>0.0.11</title>
       <description><![CDATA[<p>See the release notes for details.</p>]]></description>
-      <pubDate>Wed, 22 Apr 2026 06:32:49 GMT</pubDate>
-      <releaseNotesLink>https://github.com/xcy960815/Clipbook/releases/tag/v0.0.11</releaseNotesLink>
+      <pubDate>Fri, 24 Apr 2026 17:20:01 GMT</pubDate>
+      <releaseNotesLink>https://github.com/xcy960815/Clipbook/releases/tag/v0.0.12</releaseNotesLink>
       <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/xcy960815/Clipbook/releases/download/v0.0.11/Clipbook-v0.0.11-unsigned.app.zip" sparkle:version="11" sparkle:shortVersionString="0.0.11" sparkle:edSignature="74f+75SIGpBDwgDmv+W0lu6YRD4RE5Zdk+NHlgyV7VW9ggwKaa9bc6ADmvBOkZjXU8fILtVGeupD9qZsHhWwDw==" length="3612657" type="application/octet-stream"></enclosure>
+      <enclosure url="https://github.com/xcy960815/Clipbook/releases/download/v0.0.12/Clipbook-v0.0.12-unsigned.app.zip" sparkle:version="11" sparkle:shortVersionString="0.0.11" sparkle:edSignature="NrTH7/De6nGkSA/u0eYmfwgjyeaHgsUaxnDF2ZkvbDZY95PW5k6/WL3met9x9EGhfpVy0T0jHkoCK3YMh2waAQ==" length="3615668" type="application/octet-stream"></enclosure>
     </item>
   </channel>
 </rss><!-- sparkle-signatures:
-edSignature: /H0YI9Ml9Kn2mq7IdfpJDeirCDeOGzFoBqbJ0MNE1Q5CB13Yl6bsPf7yrXu9sky4Ja0S7LReMrS0LssqxIbEBg==
+edSignature: OluHFG38YW0m1jWydfbOiishQ6TZd0ovPEQFYuzSo7DUnFFAtMNBgt31RcqYOyp6fA9S+fxZ1+funPv4w8tFAQ==
 length: 1391
 -->
