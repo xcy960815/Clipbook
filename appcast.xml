@@ -9,13 +9,13 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     <item>
       <title>0.0.12</title>
       <description><![CDATA[<p>See the release notes for details.</p>]]></description>
-      <pubDate>Fri, 24 Apr 2026 17:40:10 GMT</pubDate>
+      <pubDate>Sat, 25 Apr 2026 13:33:36 GMT</pubDate>
       <releaseNotesLink>https://github.com/xcy960815/Clipbook/releases/tag/v0.0.12</releaseNotesLink>
       <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/xcy960815/Clipbook/releases/download/v0.0.12/Clipbook-v0.0.12-unsigned.app.zip" sparkle:version="12" sparkle:shortVersionString="0.0.12" sparkle:edSignature="vPQIno26BYCbCSXG8sjkNZoWJgF40MCVY1Q+9uLZpanw+SUJf5B0CmcPclJOYJiojZvn2nkQx+qNV6nm8HZeCQ==" length="3615658" type="application/octet-stream"></enclosure>
+      <enclosure url="https://github.com/xcy960815/Clipbook/releases/download/v0.0.12/Clipbook-v0.0.12-unsigned.app.zip" sparkle:version="12" sparkle:shortVersionString="0.0.12" sparkle:edSignature="3MDrMPOBCQSF7QsqwXMt0f106TlEMqMFNLPXSWncxbuphQwbv9Xk6irUDp7X1KYq14lx/fFL8deQw1TCRYUpBQ==" length="3615658" type="application/octet-stream"></enclosure>
     </item>
   </channel>
 </rss><!-- sparkle-signatures:
-edSignature: 2Ql27vhPaNFvl2z97Mgw16Thx8DmuhZexMl9UNKD8ppfXDrFT/LpCznM+ujQ22xRRQXx9HZdqCGXKLdexOO8Ag==
+edSignature: OMMfcuX56UX3XdU+4dXxqW4U3Fm6VByLFCcrssSXUVNdMe+6dMFOofNpM0ILsZ40mMXu/SKyN8K960FjzCxNBg==
 length: 1391
 -->
